@@ -1,0 +1,136 @@
+.board-layout {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    height: 100vh;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.main-board {
+    flex: 2;
+    background: #d4eecf;
+    border-radius: 10px;
+    padding: 20px;
+    overflow-y: auto;
+    border: 10px solid #c92f2f;
+    /* Board border */
+}
+
+.tiles-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.tile {
+    background: white;
+    border: 2px solid #333;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    height: 140px;
+    position: relative;
+    color: black;
+}
+
+.color-strip {
+    height: 25px;
+    width: 100%;
+    border-bottom: 2px solid #333;
+}
+
+.tile-name {
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 5px;
+    padding: 0 2px;
+}
+
+.tile-price {
+    text-align: center;
+    font-size: 0.75rem;
+    margin-top: auto;
+    margin-bottom: 5px;
+}
+
+.player-tokens {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    position: absolute;
+    bottom: 30px;
+    width: 100%;
+}
+
+.token {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 1px solid white;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
+}
+
+.owner-badge {
+    text-align: center;
+    font-size: 0.6rem;
+    color: white;
+    padding: 2px 0;
+    margin-top: 2px;
+}
+
+.sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 300px;
+}
+
+.status-panel,
+.players-panel,
+.logs-panel {
+    background: #333;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.action-btn {
+    background: #007bff;
+    color: white;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.buy-btn {
+    background: #ffc107;
+    color: black;
+    width: 100%;
+}
+
+.player-card {
+    background: #444;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.active-turn {
+    background: #555;
+    box-shadow: 0 0 5px #fff;
+}
+
+.logs-list {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.log-entry {
+    border-bottom: 1px solid #444;
+    padding: 4px 0;
+}

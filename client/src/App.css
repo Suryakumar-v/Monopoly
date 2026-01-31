@@ -1,0 +1,27 @@
+.waiting-room {
+    background: #333;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+.start-btn {
+    background-color: #33ff57;
+    color: #000;
+    font-size: 1.2rem;
+    margin-top: 1rem;
+    padding: 10px 30px;
+}
+
+.player-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.player-list li {
+    background: #444;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 4px;
+}
