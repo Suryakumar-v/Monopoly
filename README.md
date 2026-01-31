@@ -1,22 +1,35 @@
-# Setup Instructions
+# Monopoly India
 
-## Prerequisites
-You need to install **Node.js** to run this application.
-1. Download and install from [nodejs.org](https://nodejs.org/).
-2. Verify installation by running `node -v` and `npm -v` in your terminal.
+An online multiplayer Monopoly game featuring Indian cities. Currently in development.
 
-## How to Run
+## Features
+- **Multiplayer**: Real-time gameplay using Socket.io.
+- **Indian Theme**: Properties are based on Indian cities.
+- **Game Logic**: Buy properties, pay rent, and roll dice.
 
-### 1. Install Dependencies
-Open a terminal in the project root (`e:\AntiGrav`) and run:
-```bash
-npm install
-npm install --workspace=server
-npm install --workspace=client
-```
+## Tech Stack
+- **Frontend**: React, Vite
+- **Backend**: Node.js, Express, Socket.io
+- **Styling**: CSS
 
-### 2. Run the Game
-```bash
-npm run dev
-```
-This will start both the backend server (port 3001) and the frontend client (port 5173).
+## How to Run Locally
+
+### Prerequisites
+- Node.js installed.
+
+### Steps
+1. **Server**:
+   ```bash
+   cd server
+   npm install
+   npm start
+   ```
+
+2. **Client**:
+   ```bash
+   cd client
+   npm install
+   npm run dev
+   ```
+
+3. Open `http://localhost:5173` in your browser.
