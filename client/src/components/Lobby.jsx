@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+import { socket } from '../services/socket';
 import './Lobby.css';
 
 export default function Lobby({ onJoin }) {
