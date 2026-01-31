@@ -6,20 +6,20 @@ class GameManager {
         this.games = new Map(); // roomCode -> MonopolyGame
     }
 
-    createRoom(hostName, socketId) {
+    createRoom(hostName, socketId, pokemonId) {
         const roomCode = this.generateRoomCode();
         const game = new MonopolyGame(roomCode, this.io);
-        game.addPlayer(socketId, hostName, true); // true = methods
+        game.addPlayer(socketId, hostName, true, pokemonId); // true = methods
         this.games.set(roomCode, game);
         return roomCode;
     }
 
-    joinRoom(roomCode, playerName, socketId) {
+    joinRoom(roomCode, playerName, socketId, pokemonId) {
         const game = this.games.get(roomCode);
         if (!game) {
             throw new Error("Room not found");
         }
-        game.addPlayer(socketId, playerName, false);
+        game.addPlayer(socketId, playerName, false, pokemonId);
         return game;
     }
 

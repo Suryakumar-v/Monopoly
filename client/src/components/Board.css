@@ -64,12 +64,26 @@
     width: 100%;
 }
 
-.token {
-    width: 15px;
-    height: 15px;
+.token-container {
+    position: relative;
+    z-index: 10;
+}
+
+.token-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
     border-radius: 50%;
-    border: 1px solid white;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.5);
+    /* Optional: colored border to show player color if needed, 
+       but the figure itself is distinctive */
+    border: 2px solid transparent;
+    transition: transform 0.2s;
+}
+
+.token-img:hover {
+    transform: scale(1.5) translateY(-5px);
+    z-index: 20;
 }
 
 .owner-badge {

@@ -60,7 +60,14 @@ export default function Board({ gameData, myId, roomCode }) {
 
                                 <div className="player-tokens">
                                     {occupants.map(p => (
-                                        <div key={p.id} className="token" style={{ backgroundColor: p.color }} title={p.name}></div>
+                                        <div key={p.id} className="token-container" title={p.name}>
+                                            <img
+                                                src={`/assets/pokemon/${p.pokemonId || 'mewtwo'}.png`}
+                                                alt={p.name}
+                                                className="token-img"
+                                                style={{ borderColor: p.color }}
+                                            />
+                                        </div>
                                     ))}
                                 </div>
                             </div>

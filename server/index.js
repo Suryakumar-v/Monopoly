@@ -25,9 +25,9 @@ const PORT = process.env.PORT || 3001;
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    socket.on('create_room', ({ playerName }) => {
+    socket.on('create_room', ({ playerName, pokemonId }) => {
         try {
-            const roomCode = gameManager.createRoom(playerName, socket.id);
+            const roomCode = gameManager.createRoom(playerName, socket.id, pokemonId);
             socket.join(roomCode);
             socket.emit('room_created', { roomCode });
         } catch (e) {
@@ -35,9 +35,9 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('join_room', ({ roomCode, playerName }) => {
+    socket.on('join_room', ({ roomCode, playerName, pokemonId }) => {
         try {
-            const game = gameManager.joinRoom(roomCode, playerName, socket.id);
+            const game = gameManager.joinRoom(roomCode, playerName, socket.id, pokemonId);
             socket.join(roomCode);
             socket.emit('joined_room', { roomCode });
         } catch (e) {
