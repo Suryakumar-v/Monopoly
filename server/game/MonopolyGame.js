@@ -74,8 +74,15 @@ class MonopolyGame {
         player.position = (player.position + total) % this.board.length;
 
         this.logs.push(`${player.name} rolled ${die1} + ${die2} = ${total}`);
-
         this.handleLanding(player);
+
+        // Notify client that roll is done, enable End Turn button
+        this.io.to(this.roomCode).emit('roll_completed', { playerId: socketId });
+        this.broadcastState();
+    }
+
+    endTurn(socketId) {
+        if (this.players[this.currentTurnIndex].id !== socketId) return;
 
         // Next turn
         this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;

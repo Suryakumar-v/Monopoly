@@ -62,6 +62,17 @@ io.on('connection', (socket) => {
         if (game) game.buyProperty(socket.id);
     });
 
+    socket.on('end_turn', ({ roomCode }) => {
+        try {
+            const game = gameManager.getGame(roomCode);
+            if (game) {
+                game.endTurn(socket.id);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         gameManager.handleDisconnect(socket.id);
