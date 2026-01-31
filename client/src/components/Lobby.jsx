@@ -71,6 +71,34 @@ export default function Lobby({ onJoin }) {
                 .section { margin: 1rem 0; }
                 .divider { margin: 1rem 0; font-weight: bold; color: #888; }
                 .error { color: #ff6b6b; }
+                
+                button {
+                    background: #4cc9f0;
+                    color: #000;
+                    border: none;
+                    padding: 0.8rem 1.5rem;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 1rem;
+                    transition: all 0.2s;
+                    width: 100%;
+                    margin-top: 0.5rem;
+                }
+                button:hover {
+                    background: #480ca8;
+                    color: #fff;
+                    transform: translateY(-2px);
+                }
+                input {
+                    padding: 0.8rem;
+                    border-radius: 4px;
+                    border: 1px solid #555;
+                    background: #444;
+                    color: white;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
             `}</style>
         </div>
     );
