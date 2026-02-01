@@ -462,3 +462,174 @@
 .prop-tag.station {
     background: #333;
 }
+
+/* === ENHANCED PLAYER CARDS === */
+.player-card {
+    position: relative;
+}
+
+.player-info {
+    flex: 1;
+}
+
+.props-count {
+    font-size: 0.7rem;
+    color: #888;
+}
+
+.trade-btn {
+    background: #9b59b6;
+    border: none;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.trade-btn:hover {
+    background: #8e44ad;
+}
+
+/* === MY PROPERTIES LIST === */
+.my-props {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.prop-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    gap: 8px;
+}
+
+.prop-name {
+    flex: 1;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.prop-buildings {
+    font-size: 0.8rem;
+}
+
+.prop-actions {
+    display: flex;
+    gap: 3px;
+}
+
+.prop-actions button {
+    background: #2c3e50;
+    border: 1px solid #555;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.7rem;
+}
+
+.prop-actions button:hover {
+    background: #34495e;
+}
+
+/* Property color indicators */
+.prop-item.brown {
+    border-left: 3px solid #8b4513;
+}
+
+.prop-item.light_blue {
+    border-left: 3px solid #87ceeb;
+}
+
+.prop-item.pink {
+    border-left: 3px solid #ff69b4;
+}
+
+.prop-item.orange {
+    border-left: 3px solid #ff8c00;
+}
+
+.prop-item.red {
+    border-left: 3px solid #dc143c;
+}
+
+.prop-item.yellow {
+    border-left: 3px solid #ffd700;
+}
+
+.prop-item.green {
+    border-left: 3px solid #228b22;
+}
+
+.prop-item.dark_blue {
+    border-left: 3px solid #00008b;
+}
+
+.prop-item.station {
+    border-left: 3px solid #333;
+}
+
+/* === TRADE PANEL === */
+.trade-panel {
+    background: #2c3e50;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.trade-panel.incoming {
+    background: #27ae60;
+}
+
+.trade-panel h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+}
+
+.trade-section {
+    margin-bottom: 10px;
+}
+
+.trade-section label {
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 3px;
+}
+
+.trade-section input {
+    width: 100%;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #555;
+}
+
+.trade-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.trade-buttons button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.trade-buttons button:first-child {
+    background: #3498db;
+    color: white;
+}
+
+.trade-buttons button:last-child {
+    background: #e74c3c;
+    color: white;
+}

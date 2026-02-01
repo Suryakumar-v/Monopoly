@@ -100,6 +100,48 @@ io.on('connection', (socket) => {
         if (game) game.passAuction(socket.id);
     });
 
+    // Building handlers
+    socket.on('build_house', ({ roomCode, propertyIndex }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.buildHouse(socket.id, propertyIndex);
+    });
+
+    socket.on('sell_house', ({ roomCode, propertyIndex }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.sellHouse(socket.id, propertyIndex);
+    });
+
+    socket.on('buy_hotel', ({ roomCode, propertyIndex }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.buyHotel(socket.id, propertyIndex);
+    });
+
+    socket.on('sell_hotel', ({ roomCode, propertyIndex }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.sellHotel(socket.id, propertyIndex);
+    });
+
+    // Trading handlers
+    socket.on('initiate_trade', ({ roomCode, toPlayerId, offer }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.initiateTrade(socket.id, toPlayerId, offer);
+    });
+
+    socket.on('accept_trade', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.acceptTrade(socket.id);
+    });
+
+    socket.on('decline_trade', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.declineTrade(socket.id);
+    });
+
+    socket.on('cancel_trade', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.cancelTrade(socket.id);
+    });
+
     socket.on('end_turn', ({ roomCode }) => {
         try {
             const game = gameManager.getGame(roomCode);

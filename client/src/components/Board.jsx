@@ -3,7 +3,7 @@ import { socket } from '../services/socket';
 import './Board.css';
 
 export default function Board({ gameData, myId, roomCode }) {
-    const { players, board, currentTurn, logs, auction } = gameData;
+    const { players, board, currentTurn, logs, auction, pendingTrade } = gameData;
 
     // currentTurn is a player ID, not an index
     const currentPlayer = players.find(p => p.id === currentTurn);
@@ -13,6 +13,10 @@ export default function Board({ gameData, myId, roomCode }) {
     const [hasRolled, setHasRolled] = useState(false);
     const [canRollAgain, setCanRollAgain] = useState(false);
     const [bidAmount, setBidAmount] = useState(10);
+
+    // Trade state
+    const [tradeTarget, setTradeTarget] = useState(null);
+    const [tradeOffer, setTradeOffer] = useState({ money: 0, requestMoney: 0 });
 
     useEffect(() => {
         const onRollComplete = ({ playerId, canRollAgain: canRoll }) => {
@@ -44,6 +48,32 @@ export default function Board({ gameData, myId, roomCode }) {
         setBidAmount(bidAmount + 10);
     };
     const handlePassAuction = () => socket.emit('pass_auction', { roomCode });
+
+    // Building handlers
+    const handleBuildHouse = (propertyIndex) => socket.emit('build_house', { roomCode, propertyIndex });
+    const handleSellHouse = (propertyIndex) => socket.emit('sell_house', { roomCode, propertyIndex });
+    const handleBuyHotel = (propertyIndex) => socket.emit('buy_hotel', { roomCode, propertyIndex });
+    const handleSellHotel = (propertyIndex) => socket.emit('sell_hotel', { roomCode, propertyIndex });
+
+    // Trade handlers
+    const handleSendTrade = () => {
+        socket.emit('initiate_trade', {
+            roomCode,
+            toPlayerId: tradeTarget,
+            offer: { money: tradeOffer.money, request: { money: tradeOffer.requestMoney } }
+        });
+        setTradeTarget(null);
+        setTradeOffer({ money: 0, requestMoney: 0 });
+    };
+    const handleAcceptTrade = () => socket.emit('accept_trade', { roomCode });
+    const handleDeclineTrade = () => socket.emit('decline_trade', { roomCode });
+
+    // Check if player has monopoly on a color group
+    const checkMonopoly = (group) => {
+        if (!group) return false;
+        const groupProps = board.filter(s => s.group === group);
+        return groupProps.every(s => s.owner === myId);
+    };
 
     // Grid position
     const getGridPosition = (index) => {
@@ -255,20 +285,98 @@ export default function Board({ gameData, myId, roomCode }) {
                 {players.map((p, i) => (
                     <div key={p.id} className={`player-card ${p.id === currentTurn ? 'current' : ''}`}>
                         <img src={`/assets/pokemon/${p.pokemonId || 'mewtwo'}.png`} alt="" />
-                        <div>
+                        <div className="player-info">
                             <div className="name">{p.name} {p.id === myId && '(You)'}</div>
                             <div className="money">₹{p.money}</div>
+                            <div className="props-count">
+                                🏠 {board.filter(s => s.owner === p.id).length} properties
+                            </div>
                         </div>
+                        {p.id !== myId && (
+                            <button
+                                className="trade-btn"
+                                onClick={() => setTradeTarget(p.id)}
+                                title="Trade with this player"
+                            >
+                                🔄
+                            </button>
+                        )}
                     </div>
                 ))}
 
                 <h3>🏘️ Your Properties</h3>
-                <div className="props-list">
-                    {board.filter(s => s.owner === myId).map(s => (
-                        <span key={s.id} className={`prop-tag ${s.group || ''}`}>{s.name}</span>
-                    ))}
+                <div className="my-props">
+                    {board.filter(s => s.owner === myId).map((s, idx) => {
+                        const propIndex = board.findIndex(b => b.id === s.id);
+                        const canBuild = checkMonopoly(s.group) && s.houses < 4 && !s.hasHotel;
+                        const canBuildHotel = checkMonopoly(s.group) && s.houses === 4 && !s.hasHotel;
+                        const housePrice = s.housePrice || Math.floor(s.price / 2);
+
+                        return (
+                            <div key={s.id} className={`prop-item ${s.group || ''}`}>
+                                <span className="prop-name">{s.name}</span>
+                                <span className="prop-buildings">
+                                    {s.hasHotel ? '🏨' : '🏠'.repeat(s.houses)}
+                                </span>
+                                <div className="prop-actions">
+                                    {canBuild && (
+                                        <button onClick={() => handleBuildHouse(propIndex)} title={`Build house ₹${housePrice}`}>
+                                            +🏠
+                                        </button>
+                                    )}
+                                    {s.houses > 0 && !s.hasHotel && (
+                                        <button onClick={() => handleSellHouse(propIndex)} title="Sell house">
+                                            -🏠
+                                        </button>
+                                    )}
+                                    {canBuildHotel && (
+                                        <button onClick={() => handleBuyHotel(propIndex)} title={`Build hotel ₹${housePrice}`}>
+                                            +🏨
+                                        </button>
+                                    )}
+                                    {s.hasHotel && (
+                                        <button onClick={() => handleSellHotel(propIndex)} title="Sell hotel">
+                                            -🏨
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
                     {board.filter(s => s.owner === myId).length === 0 && <em>None yet</em>}
                 </div>
+
+                {/* Trade Panel */}
+                {tradeTarget && (
+                    <div className="trade-panel">
+                        <h3>🔄 Trade with {players.find(p => p.id === tradeTarget)?.name}</h3>
+                        <div className="trade-section">
+                            <label>You offer ₹:</label>
+                            <input type="number" value={tradeOffer.money} onChange={e => setTradeOffer({ ...tradeOffer, money: parseInt(e.target.value) || 0 })} />
+                        </div>
+                        <div className="trade-section">
+                            <label>You request ₹:</label>
+                            <input type="number" value={tradeOffer.requestMoney} onChange={e => setTradeOffer({ ...tradeOffer, requestMoney: parseInt(e.target.value) || 0 })} />
+                        </div>
+                        <div className="trade-buttons">
+                            <button onClick={handleSendTrade}>📤 Send Trade</button>
+                            <button onClick={() => setTradeTarget(null)}>❌ Cancel</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Pending Trade (for receiver) */}
+                {pendingTrade && pendingTrade.to === myId && (
+                    <div className="trade-panel incoming">
+                        <h3>📥 Trade from {pendingTrade.fromName}</h3>
+                        <p>Offers: ₹{pendingTrade.offerMoney}</p>
+                        <p>Wants: ₹{pendingTrade.requestMoney}</p>
+                        <div className="trade-buttons">
+                            <button onClick={handleAcceptTrade}>✅ Accept</button>
+                            <button onClick={handleDeclineTrade}>❌ Decline</button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

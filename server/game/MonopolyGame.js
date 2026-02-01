@@ -510,6 +510,159 @@ class MonopolyGame {
         this.broadcastState();
     }
 
+    // === BUILDING HOUSES & HOTELS ===
+    buildHouse(socketId, propertyIndex) {
+        const player = this.players.find(p => p.id === socketId);
+        const property = this.board[propertyIndex];
+
+        if (!player || !property || property.owner !== player.id) return;
+        if (!property.group || property.houses >= 4 || property.hasHotel) return;
+
+        // Must own all of the color group
+        if (!this.checkMonopoly(player.id, property.group)) return;
+
+        // Must build evenly - check if this property has fewer houses than others
+        const groupProps = this.board.filter(p => p.group === property.group && p.owner === player.id);
+        const minHouses = Math.min(...groupProps.map(p => p.houses));
+        if (property.houses > minHouses) return;
+
+        // House price is typically the same as property price / 2 or listed
+        const housePrice = property.housePrice || Math.floor(property.price / 2);
+        if (player.money < housePrice) return;
+
+        player.money -= housePrice;
+        property.houses++;
+        this.logs.push(`${player.name} built a house on ${property.name} for ₹${housePrice}`);
+        this.broadcastState();
+    }
+
+    sellHouse(socketId, propertyIndex) {
+        const player = this.players.find(p => p.id === socketId);
+        const property = this.board[propertyIndex];
+
+        if (!player || !property || property.owner !== player.id) return;
+        if (property.houses <= 0) return;
+
+        // Must sell evenly
+        const groupProps = this.board.filter(p => p.group === property.group && p.owner === player.id);
+        const maxHouses = Math.max(...groupProps.map(p => p.houses));
+        if (property.houses < maxHouses) return;
+
+        const housePrice = property.housePrice || Math.floor(property.price / 2);
+        const sellPrice = Math.floor(housePrice / 2);
+
+        player.money += sellPrice;
+        property.houses--;
+        this.logs.push(`${player.name} sold a house from ${property.name} for ₹${sellPrice}`);
+        this.broadcastState();
+    }
+
+    buyHotel(socketId, propertyIndex) {
+        const player = this.players.find(p => p.id === socketId);
+        const property = this.board[propertyIndex];
+
+        if (!player || !property || property.owner !== player.id) return;
+        if (property.houses !== 4 || property.hasHotel) return;
+
+        const hotelPrice = property.housePrice || Math.floor(property.price / 2);
+        if (player.money < hotelPrice) return;
+
+        player.money -= hotelPrice;
+        property.houses = 0;
+        property.hasHotel = true;
+        this.logs.push(`${player.name} built a HOTEL on ${property.name} for ₹${hotelPrice}`);
+        this.broadcastState();
+    }
+
+    sellHotel(socketId, propertyIndex) {
+        const player = this.players.find(p => p.id === socketId);
+        const property = this.board[propertyIndex];
+
+        if (!player || !property || property.owner !== player.id) return;
+        if (!property.hasHotel) return;
+
+        const hotelPrice = property.housePrice || Math.floor(property.price / 2);
+        const sellPrice = Math.floor(hotelPrice / 2);
+
+        player.money += sellPrice;
+        property.hasHotel = false;
+        property.houses = 4; // Convert back to 4 houses
+        this.logs.push(`${player.name} sold the hotel from ${property.name} for ₹${sellPrice}`);
+        this.broadcastState();
+    }
+
+    // === TRADING ===
+    initiateTrade(fromId, toId, offer) {
+        // offer = { money: 100, properties: [1, 5], request: { money: 50, properties: [3] } }
+        const fromPlayer = this.players.find(p => p.id === fromId);
+        const toPlayer = this.players.find(p => p.id === toId);
+
+        if (!fromPlayer || !toPlayer) return;
+
+        this.pendingTrade = {
+            from: fromId,
+            fromName: fromPlayer.name,
+            to: toId,
+            toName: toPlayer.name,
+            offerMoney: offer.money || 0,
+            offerProperties: offer.properties || [],
+            requestMoney: offer.request?.money || 0,
+            requestProperties: offer.request?.properties || []
+        };
+
+        this.logs.push(`${fromPlayer.name} proposed a trade to ${toPlayer.name}`);
+        this.broadcastState();
+    }
+
+    acceptTrade(socketId) {
+        if (!this.pendingTrade || this.pendingTrade.to !== socketId) return;
+
+        const fromPlayer = this.players.find(p => p.id === this.pendingTrade.from);
+        const toPlayer = this.players.find(p => p.id === this.pendingTrade.to);
+
+        if (!fromPlayer || !toPlayer) return;
+
+        // Transfer money
+        fromPlayer.money -= this.pendingTrade.offerMoney;
+        fromPlayer.money += this.pendingTrade.requestMoney;
+        toPlayer.money += this.pendingTrade.offerMoney;
+        toPlayer.money -= this.pendingTrade.requestMoney;
+
+        // Transfer properties
+        this.pendingTrade.offerProperties.forEach(idx => {
+            if (this.board[idx]?.owner === fromPlayer.id) {
+                this.board[idx].owner = toPlayer.id;
+            }
+        });
+
+        this.pendingTrade.requestProperties.forEach(idx => {
+            if (this.board[idx]?.owner === toPlayer.id) {
+                this.board[idx].owner = fromPlayer.id;
+            }
+        });
+
+        this.logs.push(`Trade accepted! ${fromPlayer.name} and ${toPlayer.name} traded.`);
+        this.pendingTrade = null;
+        this.broadcastState();
+    }
+
+    declineTrade(socketId) {
+        if (!this.pendingTrade || this.pendingTrade.to !== socketId) return;
+
+        const toPlayer = this.players.find(p => p.id === socketId);
+        this.logs.push(`${toPlayer?.name} declined the trade.`);
+        this.pendingTrade = null;
+        this.broadcastState();
+    }
+
+    cancelTrade(socketId) {
+        if (!this.pendingTrade || this.pendingTrade.from !== socketId) return;
+
+        this.logs.push(`Trade cancelled.`);
+        this.pendingTrade = null;
+        this.broadcastState();
+    }
+
     isEmpty() {
         return this.players.length === 0;
     }
@@ -522,7 +675,8 @@ class MonopolyGame {
             currentTurn: this.players[this.currentTurnIndex]?.id,
             logs: this.logs,
             lastDrawnCard: this.lastDrawnCard,
-            auction: this.auction
+            auction: this.auction,
+            pendingTrade: this.pendingTrade
         });
     }
 }
