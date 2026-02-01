@@ -8,16 +8,17 @@
 
 .game-wrapper {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
     background: #2d3436;
-    padding: 10px;
-    gap: 10px;
+    padding: 15px;
+    gap: 15px;
     font-family: 'Arial', sans-serif;
+    overflow: hidden;
 }
 
 /* === BOARD === */
 .monopoly-board {
-    --size: min(88vh, 75vw);
+    --size: min(95vh, 65vw);
     width: var(--size);
     height: var(--size);
     display: grid;
@@ -364,11 +365,12 @@
     flex: 1;
     background: #34495e;
     border-radius: 10px;
-    padding: 15px;
+    padding: 20px;
     color: white;
-    min-width: 180px;
-    max-width: 250px;
+    min-width: 280px;
+    max-width: 400px;
     overflow-y: auto;
+    height: calc(100vh - 30px);
 }
 
 .sidebar h2,
