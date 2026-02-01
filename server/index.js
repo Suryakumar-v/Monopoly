@@ -48,7 +48,14 @@ io.on('connection', (socket) => {
     socket.on('start_game', ({ roomCode }) => {
         const game = gameManager.getGame(roomCode);
         if (game && game.players[0].id === socket.id) {
-            game.startGame();
+            game.startGame(false);
+        }
+    });
+
+    socket.on('start_test_game', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game && game.players[0].id === socket.id) {
+            game.startGame(true); // Test mode - allows 1 player
         }
     });
 

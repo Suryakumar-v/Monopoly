@@ -56,6 +56,12 @@ function App() {
     }
 
     if (gameState === 'WAITING') {
+        const isHost = gameData?.players.find(p => p.id === myId)?.isHost;
+
+        const startTestGame = () => {
+            socket.emit('start_test_game', { roomCode });
+        };
+
         return (
             <div className="waiting-room">
                 <h2>Room Code: {roomCode}</h2>
@@ -66,8 +72,15 @@ function App() {
                         {gameData?.players.map(p => <li key={p.id}>{p.name} {p.isHost ? '(Host)' : ''}</li>)}
                     </ul>
                 </div>
-                {gameData?.players.find(p => p.id === myId)?.isHost && (
-                    <button className="start-btn" onClick={startGame}>Start Game</button>
+                {isHost && (
+                    <div className="host-controls">
+                        <button className="start-btn" onClick={startGame} disabled={gameData?.players.length < 2}>
+                            Start Game ({gameData?.players.length}/2+ players)
+                        </button>
+                        <button className="test-btn" onClick={startTestGame} style={{ marginTop: '10px', background: '#ff9800' }}>
+                            🧪 Test Mode (Solo Play)
+                        </button>
+                    </div>
                 )}
             </div>
         );

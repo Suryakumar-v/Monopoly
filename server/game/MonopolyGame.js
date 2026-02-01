@@ -44,8 +44,11 @@ class MonopolyGame {
         return colors[index % colors.length];
     }
 
-    startGame() {
-        if (this.players.length < 2) return; // Need at least 2 players
+    startGame(testMode = false) {
+        // In test mode, allow 1 player. Otherwise need at least 2.
+        if (!testMode && this.players.length < 2) return;
+        if (this.players.length < 1) return;
+
         this.gameState = 'PLAYING';
         this.currentTurnIndex = 0;
         this.broadcastState();
