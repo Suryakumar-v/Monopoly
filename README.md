@@ -2,6 +2,8 @@
 
 An online multiplayer Monopoly game featuring Indian cities. Currently in development.
 
+https://monopoly-client-six.vercel.app/
+
 ## Features
 - **Multiplayer**: Real-time gameplay using Socket.io.
 - **Indian Theme**: Properties are based on Indian cities.
