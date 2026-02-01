@@ -261,6 +261,16 @@
     margin-bottom: 10px;
 }
 
+.jail-badge {
+    display: inline-block;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+}
+
 .buttons {
     display: flex;
     gap: 10px;

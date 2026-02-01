@@ -11,19 +11,29 @@ export default function Board({ gameData, myId, roomCode }) {
     const me = players.find(p => p.id === myId);
 
     const [hasRolled, setHasRolled] = useState(false);
+    const [canRollAgain, setCanRollAgain] = useState(false);
 
     useEffect(() => {
-        const onRollComplete = ({ playerId }) => {
-            if (playerId === myId) setHasRolled(true);
+        const onRollComplete = ({ playerId, canRollAgain: canRoll }) => {
+            if (playerId === myId) {
+                setHasRolled(true);
+                setCanRollAgain(canRoll || false);
+            }
         };
         setHasRolled(false);
+        setCanRollAgain(false);
         socket.on('roll_completed', onRollComplete);
         return () => socket.off('roll_completed', onRollComplete);
     }, [currentTurn, myId]);
 
     const handleRoll = () => socket.emit('roll_dice', { roomCode });
-    const handleEndTurn = () => { socket.emit('end_turn', { roomCode }); setHasRolled(false); };
+    const handleEndTurn = () => {
+        socket.emit('end_turn', { roomCode });
+        setHasRolled(false);
+        setCanRollAgain(false);
+    };
     const handleBuy = () => socket.emit('buy_property', { roomCode });
+    const handlePayJailFine = () => socket.emit('pay_jail_fine', { roomCode });
 
     // Grid position
     const getGridPosition = (index) => {
@@ -145,20 +155,38 @@ export default function Board({ gameData, myId, roomCode }) {
                     <div className="game-controls">
                         <div className="turn-display">
                             {currentPlayer?.name}'s Turn
+                            {currentPlayer?.inJail && <span className="jail-badge">🔒 IN JAIL</span>}
                         </div>
 
                         {isMyTurn && (
                             <div className="buttons">
-                                {!hasRolled ? (
-                                    <button className="game-btn roll" onClick={handleRoll}>🎲 ROLL</button>
-                                ) : (
+                                {/* In Jail options */}
+                                {me?.inJail && !hasRolled && (
                                     <>
+                                        <button className="game-btn roll" onClick={handleRoll}>🎲 Roll for Doubles</button>
+                                        <button className="game-btn buy" onClick={handlePayJailFine}>💰 Pay ₹50 Fine</button>
+                                    </>
+                                )}
+
+                                {/* Normal turn - not rolled yet */}
+                                {!me?.inJail && !hasRolled && (
+                                    <button className="game-btn roll" onClick={handleRoll}>🎲 ROLL DICE</button>
+                                )}
+
+                                {/* After rolling */}
+                                {hasRolled && (
+                                    <>
+                                        {canRollAgain && (
+                                            <button className="game-btn roll" onClick={handleRoll}>🎲 DOUBLES! Roll Again</button>
+                                        )}
                                         {canBuy && (
                                             <button className="game-btn buy" onClick={handleBuy}>
                                                 🏠 BUY ₹{currentProp.price}
                                             </button>
                                         )}
-                                        <button className="game-btn end" onClick={handleEndTurn}>✓ END</button>
+                                        {!canRollAgain && (
+                                            <button className="game-btn end" onClick={handleEndTurn}>✓ END TURN</button>
+                                        )}
                                     </>
                                 )}
                             </div>

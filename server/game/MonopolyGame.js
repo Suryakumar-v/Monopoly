@@ -4,18 +4,18 @@ class MonopolyGame {
     constructor(roomCode, io) {
         this.roomCode = roomCode;
         this.io = io;
-        this.players = []; // Array of player objects
+        this.players = [];
         this.gameState = 'LOBBY'; // LOBBY, PLAYING, ENDED
         this.currentTurnIndex = 0;
-        this.board = properties.map(p => ({ ...p, owner: null }));
+        this.board = properties.map(p => ({ ...p, owner: null, houses: 0, hasHotel: false, isMortgaged: false }));
         this.logs = [];
+        this.doublesCount = 0; // Track consecutive doubles
+        this.lastDiceRoll = [0, 0]; // Store for utility rent calculation
     }
 
     addPlayer(socketId, name, isHost, pokemonId) {
-        if (this.gameState !== 'LOBBY') {
-            // Allow reconnection logic if needed, but for now reject
-            return;
-        }
+        if (this.gameState !== 'LOBBY') return;
+
         const player = {
             id: socketId,
             name,
@@ -24,7 +24,10 @@ class MonopolyGame {
             money: 1500,
             position: 0,
             color: this.assignColor(this.players.length),
-            isBankrupt: false
+            isBankrupt: false,
+            inJail: false,
+            jailTurns: 0,
+            getOutOfJailCards: 0
         };
         this.players.push(player);
         this.broadcastState();
@@ -45,65 +48,197 @@ class MonopolyGame {
     }
 
     startGame(testMode = false) {
-        // In test mode, allow 1 player. Otherwise need at least 2.
         if (!testMode && this.players.length < 2) return;
         if (this.players.length < 1) return;
 
         this.gameState = 'PLAYING';
         this.currentTurnIndex = 0;
+        this.doublesCount = 0;
         this.broadcastState();
         this.io.to(this.roomCode).emit('game_started');
     }
 
     rollDice(socketId) {
-        if (this.players[this.currentTurnIndex].id !== socketId) return;
+        const player = this.players[this.currentTurnIndex];
+        if (player.id !== socketId) return;
 
         const die1 = Math.floor(Math.random() * 6) + 1;
         const die2 = Math.floor(Math.random() * 6) + 1;
         const total = die1 + die2;
+        const isDoubles = die1 === die2;
 
-        const player = this.players[this.currentTurnIndex];
-        player.position = (player.position + total) % 40; // 40 spaces on board usually
-        // Simplified board logic: use properties length if we only have properties
-        // But standard board has 40 spaces. We only defined properties.
-        // For this prototype, let's map properties to indices or just cycle through properties.
-        // Let's assume standard board layout (40 spaces) but only mapped properties.
-        // Actually, to make it playable with just the file I created, let's just cycle through the properties array.
-        // There are 22 properties in the file. + Utilities + Railroads + Corners = 40.
-        // Let's assume a simplified board where it's just the properties.
-        // Or I should map them properly.
-        // Let's stick to the properties list size for now to avoid complexity of empty spaces.
-
-        player.position = (player.position + total) % this.board.length;
-
+        this.lastDiceRoll = [die1, die2];
         this.logs.push(`${player.name} rolled ${die1} + ${die2} = ${total}`);
-        this.handleLanding(player);
 
-        // Notify client that roll is done, enable End Turn button
-        this.io.to(this.roomCode).emit('roll_completed', { playerId: socketId });
+        // Handle Jail
+        if (player.inJail) {
+            if (isDoubles) {
+                // Got out of jail by rolling doubles
+                player.inJail = false;
+                player.jailTurns = 0;
+                this.logs.push(`${player.name} rolled doubles and got out of Jail!`);
+                this.movePlayer(player, total);
+            } else {
+                player.jailTurns++;
+                if (player.jailTurns >= 3) {
+                    // Must pay and get out after 3 turns
+                    player.money -= 50;
+                    player.inJail = false;
+                    player.jailTurns = 0;
+                    this.logs.push(`${player.name} paid ₹50 after 3 turns and left Jail`);
+                    this.movePlayer(player, total);
+                } else {
+                    this.logs.push(`${player.name} is still in Jail (attempt ${player.jailTurns}/3)`);
+                }
+            }
+            this.io.to(this.roomCode).emit('roll_completed', { playerId: socketId, canRollAgain: false });
+            this.broadcastState();
+            return;
+        }
+
+        // Doubles logic (not in jail)
+        if (isDoubles) {
+            this.doublesCount++;
+            if (this.doublesCount >= 3) {
+                // 3 doubles = go to jail
+                this.sendToJail(player);
+                this.logs.push(`${player.name} rolled 3 doubles and goes to Jail!`);
+                this.doublesCount = 0;
+                this.io.to(this.roomCode).emit('roll_completed', { playerId: socketId, canRollAgain: false });
+                this.broadcastState();
+                return;
+            }
+        } else {
+            this.doublesCount = 0;
+        }
+
+        this.movePlayer(player, total);
+
+        // If doubles, player can roll again
+        this.io.to(this.roomCode).emit('roll_completed', {
+            playerId: socketId,
+            canRollAgain: isDoubles && !player.inJail
+        });
         this.broadcastState();
+    }
+
+    movePlayer(player, spaces) {
+        const oldPosition = player.position;
+        player.position = (player.position + spaces) % this.board.length;
+
+        // Check if passed GO (but not sent to jail)
+        if (player.position < oldPosition && !player.inJail) {
+            player.money += 200;
+            this.logs.push(`${player.name} passed GO and collected ₹200`);
+        }
+
+        this.handleLanding(player);
+    }
+
+    handleLanding(player) {
+        const space = this.board[player.position];
+
+        // Go To Jail space (index 30)
+        if (space.id === 'goto_jail') {
+            this.sendToJail(player);
+            this.logs.push(`${player.name} landed on Go To Jail!`);
+            return;
+        }
+
+        // Tax spaces
+        if (space.type === 'tax') {
+            const taxAmount = space.id === 'income_tax' ? 200 : 100; // Income Tax or Luxury Tax
+            player.money -= taxAmount;
+            this.logs.push(`${player.name} paid ₹${taxAmount} tax`);
+            return;
+        }
+
+        // If property is owned by someone else, pay rent
+        if (space.owner && space.owner !== player.id && !space.isMortgaged) {
+            const rent = this.calculateRent(space, player);
+            const owner = this.players.find(p => p.id === space.owner);
+            if (owner && rent > 0) {
+                player.money -= rent;
+                owner.money += rent;
+                this.logs.push(`${player.name} paid ₹${rent} rent to ${owner.name}`);
+            }
+        }
+    }
+
+    calculateRent(space, player) {
+        const owner = this.players.find(p => p.id === space.owner);
+        if (!owner) return 0;
+
+        // Utility rent: 4x or 10x dice roll
+        if (space.type === 'utility') {
+            const utilitiesOwned = this.board.filter(s => s.type === 'utility' && s.owner === owner.id).length;
+            const diceTotal = this.lastDiceRoll[0] + this.lastDiceRoll[1];
+            return utilitiesOwned === 2 ? diceTotal * 10 : diceTotal * 4;
+        }
+
+        // Station rent: based on how many owned
+        if (space.group === 'station') {
+            const stationsOwned = this.board.filter(s => s.group === 'station' && s.owner === owner.id).length;
+            const stationRents = [25, 50, 100, 200];
+            return stationRents[stationsOwned - 1] || 25;
+        }
+
+        // Property rent
+        if (space.rent && space.rent.length > 0) {
+            // Check if owner has monopoly (all of same color)
+            const hasMonopoly = this.checkMonopoly(owner.id, space.group);
+
+            if (space.hasHotel) {
+                return space.rent[5]; // Hotel rent
+            } else if (space.houses > 0) {
+                return space.rent[space.houses]; // House rent (1-4 houses)
+            } else if (hasMonopoly) {
+                return space.rent[0] * 2; // Double rent for monopoly
+            } else {
+                return space.rent[0]; // Base rent
+            }
+        }
+
+        return 0;
+    }
+
+    checkMonopoly(playerId, group) {
+        if (!group) return false;
+        const groupProperties = this.board.filter(s => s.group === group);
+        return groupProperties.every(s => s.owner === playerId);
+    }
+
+    sendToJail(player) {
+        player.position = 10; // Jail is at index 10
+        player.inJail = true;
+        player.jailTurns = 0;
+    }
+
+    payJailFine(socketId) {
+        const player = this.players.find(p => p.id === socketId);
+        if (!player || !player.inJail) return;
+
+        if (player.money >= 50) {
+            player.money -= 50;
+            player.inJail = false;
+            player.jailTurns = 0;
+            this.logs.push(`${player.name} paid ₹50 to get out of Jail`);
+            this.broadcastState();
+        }
     }
 
     endTurn(socketId) {
         if (this.players[this.currentTurnIndex].id !== socketId) return;
 
-        // Next turn
+        this.doublesCount = 0;
         this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
-        this.broadcastState();
-    }
 
-    handleLanding(player) {
-        const property = this.board[player.position];
-        if (property.owner && property.owner !== player.id) {
-            // Pay rent
-            const rent = property.rent[0]; // Base rent
-            const owner = this.players.find(p => p.id === property.owner);
-            if (owner) {
-                player.money -= rent;
-                owner.money += rent;
-                this.logs.push(`${player.name} paid $${rent} rent to ${owner.name}`);
-            }
+        // Skip bankrupt players
+        while (this.players[this.currentTurnIndex].isBankrupt) {
+            this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
         }
+
+        this.broadcastState();
     }
 
     buyProperty(socketId) {
@@ -111,10 +246,10 @@ class MonopolyGame {
         if (!player) return;
 
         const property = this.board[player.position];
-        if (!property.owner && player.money >= property.price) {
+        if (!property.owner && property.price > 0 && player.money >= property.price) {
             player.money -= property.price;
             property.owner = player.id;
-            this.logs.push(`${player.name} bought ${property.name} for $${property.price}`);
+            this.logs.push(`${player.name} bought ${property.name} for ₹${property.price}`);
             this.broadcastState();
         }
     }
