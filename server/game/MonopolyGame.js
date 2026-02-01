@@ -16,7 +16,10 @@ class MonopolyGame {
         // Card decks
         this.chanceDeck = shuffle(chanceCards);
         this.communityChestDeck = shuffle(communityChestCards);
-        this.lastDrawnCard = null; // Store last drawn card for UI
+        this.lastDrawnCard = null;
+
+        // Auction state
+        this.auction = null; // { propertyIndex, currentBid, currentBidder, participants }
     }
 
     addPlayer(socketId, name, isHost, pokemonId) {
@@ -419,6 +422,94 @@ class MonopolyGame {
         }
     }
 
+    // Pass on buying - starts auction
+    passProperty(socketId) {
+        const player = this.players.find(p => p.id === socketId);
+        if (!player) return;
+
+        const property = this.board[player.position];
+        if (!property.owner && property.price > 0) {
+            this.startAuction(player.position);
+        }
+    }
+
+    startAuction(propertyIndex) {
+        const property = this.board[propertyIndex];
+        this.auction = {
+            propertyIndex,
+            propertyName: property.name,
+            currentBid: 0,
+            currentBidder: null,
+            currentBidderName: null,
+            activePlayers: this.players.filter(p => !p.isBankrupt).map(p => p.id),
+            passedPlayers: []
+        };
+        this.logs.push(`🔨 AUCTION started for ${property.name}!`);
+        this.broadcastState();
+    }
+
+    placeBid(socketId, amount) {
+        if (!this.auction) return;
+
+        const player = this.players.find(p => p.id === socketId);
+        if (!player || player.isBankrupt) return;
+
+        // Check if bid is valid
+        if (amount <= this.auction.currentBid) return;
+        if (amount > player.money) return;
+
+        this.auction.currentBid = amount;
+        this.auction.currentBidder = player.id;
+        this.auction.currentBidderName = player.name;
+        // Reset passed players when new bid comes in
+        this.auction.passedPlayers = [];
+
+        this.logs.push(`${player.name} bids ₹${amount}`);
+        this.broadcastState();
+    }
+
+    passAuction(socketId) {
+        if (!this.auction) return;
+
+        const player = this.players.find(p => p.id === socketId);
+        if (!player) return;
+
+        if (!this.auction.passedPlayers.includes(socketId)) {
+            this.auction.passedPlayers.push(socketId);
+            this.logs.push(`${player.name} passes`);
+        }
+
+        // Check if all other players have passed
+        const activePlayers = this.players.filter(p => !p.isBankrupt && p.id !== this.auction.currentBidder);
+        const allPassed = activePlayers.every(p => this.auction.passedPlayers.includes(p.id));
+
+        if (allPassed && this.auction.currentBidder) {
+            this.endAuction();
+        } else if (this.auction.passedPlayers.length >= this.players.filter(p => !p.isBankrupt).length) {
+            // Everyone passed, no bids - property remains unsold
+            this.logs.push(`No bids. ${this.auction.propertyName} remains unsold.`);
+            this.auction = null;
+        }
+
+        this.broadcastState();
+    }
+
+    endAuction() {
+        if (!this.auction || !this.auction.currentBidder) return;
+
+        const winner = this.players.find(p => p.id === this.auction.currentBidder);
+        const property = this.board[this.auction.propertyIndex];
+
+        if (winner) {
+            winner.money -= this.auction.currentBid;
+            property.owner = winner.id;
+            this.logs.push(`🎉 ${winner.name} wins ${property.name} for ₹${this.auction.currentBid}!`);
+        }
+
+        this.auction = null;
+        this.broadcastState();
+    }
+
     isEmpty() {
         return this.players.length === 0;
     }
@@ -430,7 +521,8 @@ class MonopolyGame {
             gameState: this.gameState,
             currentTurn: this.players[this.currentTurnIndex]?.id,
             logs: this.logs,
-            lastDrawnCard: this.lastDrawnCard
+            lastDrawnCard: this.lastDrawnCard,
+            auction: this.auction
         });
     }
 }

@@ -3,7 +3,7 @@ import { socket } from '../services/socket';
 import './Board.css';
 
 export default function Board({ gameData, myId, roomCode }) {
-    const { players, board, currentTurn, logs } = gameData;
+    const { players, board, currentTurn, logs, auction } = gameData;
 
     // currentTurn is a player ID, not an index
     const currentPlayer = players.find(p => p.id === currentTurn);
@@ -12,6 +12,7 @@ export default function Board({ gameData, myId, roomCode }) {
 
     const [hasRolled, setHasRolled] = useState(false);
     const [canRollAgain, setCanRollAgain] = useState(false);
+    const [bidAmount, setBidAmount] = useState(10);
 
     useEffect(() => {
         const onRollComplete = ({ playerId, canRollAgain: canRoll }) => {
@@ -35,6 +36,14 @@ export default function Board({ gameData, myId, roomCode }) {
     const handleBuy = () => socket.emit('buy_property', { roomCode });
     const handlePayJailFine = () => socket.emit('pay_jail_fine', { roomCode });
     const handleUseJailCard = () => socket.emit('use_jail_card', { roomCode });
+
+    // Auction handlers
+    const handlePassProperty = () => socket.emit('pass_property', { roomCode });
+    const handlePlaceBid = () => {
+        socket.emit('place_bid', { roomCode, amount: bidAmount });
+        setBidAmount(bidAmount + 10);
+    };
+    const handlePassAuction = () => socket.emit('pass_auction', { roomCode });
 
     // Grid position
     const getGridPosition = (index) => {
@@ -178,21 +187,56 @@ export default function Board({ gameData, myId, roomCode }) {
                                 )}
 
                                 {/* After rolling */}
-                                {hasRolled && (
+                                {hasRolled && !auction && (
                                     <>
                                         {canRollAgain && (
                                             <button className="game-btn roll" onClick={handleRoll}>🎲 DOUBLES! Roll Again</button>
                                         )}
                                         {canBuy && (
-                                            <button className="game-btn buy" onClick={handleBuy}>
-                                                🏠 BUY ₹{currentProp.price}
-                                            </button>
+                                            <>
+                                                <button className="game-btn buy" onClick={handleBuy}>
+                                                    🏠 BUY ₹{currentProp.price}
+                                                </button>
+                                                <button className="game-btn pass" onClick={handlePassProperty}>
+                                                    🔨 AUCTION
+                                                </button>
+                                            </>
                                         )}
                                         {!canRollAgain && (
                                             <button className="game-btn end" onClick={handleEndTurn}>✓ END TURN</button>
                                         )}
                                     </>
                                 )}
+                            </div>
+                        )}
+
+                        {/* Auction UI */}
+                        {auction && (
+                            <div className="auction-panel">
+                                <h3>🔨 AUCTION: {auction.propertyName}</h3>
+                                <div className="current-bid">
+                                    Current Bid: ₹{auction.currentBid}
+                                    {auction.currentBidderName && ` by ${auction.currentBidderName}`}
+                                </div>
+                                <div className="bid-controls">
+                                    <input
+                                        type="number"
+                                        value={bidAmount}
+                                        onChange={(e) => setBidAmount(Math.max(auction.currentBid + 1, parseInt(e.target.value) || 0))}
+                                        min={auction.currentBid + 1}
+                                        max={me?.money || 0}
+                                    />
+                                    <button
+                                        className="game-btn buy"
+                                        onClick={handlePlaceBid}
+                                        disabled={bidAmount <= auction.currentBid || bidAmount > me?.money}
+                                    >
+                                        💰 BID ₹{bidAmount}
+                                    </button>
+                                    <button className="game-btn pass" onClick={handlePassAuction}>
+                                        ❌ PASS
+                                    </button>
+                                </div>
                             </div>
                         )}
 

@@ -84,6 +84,22 @@ io.on('connection', (socket) => {
         if (game) game.useJailCard(socket.id);
     });
 
+    // Auction handlers
+    socket.on('pass_property', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.passProperty(socket.id);
+    });
+
+    socket.on('place_bid', ({ roomCode, amount }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.placeBid(socket.id, amount);
+    });
+
+    socket.on('pass_auction', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.passAuction(socket.id);
+    });
+
     socket.on('end_turn', ({ roomCode }) => {
         try {
             const game = gameManager.getGame(roomCode);

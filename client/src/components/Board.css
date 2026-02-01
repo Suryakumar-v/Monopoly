@@ -302,6 +302,55 @@
     color: white;
 }
 
+.game-btn.pass {
+    background: #9b59b6;
+    color: white;
+}
+
+.game-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* === AUCTION PANEL === */
+.auction-panel {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.auction-panel h3 {
+    margin: 0 0 10px 0;
+    color: #f39c12;
+}
+
+.current-bid {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #2ecc71;
+}
+
+.bid-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.bid-controls input {
+    width: 80px;
+    padding: 8px;
+    font-size: 1rem;
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    text-align: center;
+}
+
 .mini-log {
     margin-top: 10px;
     font-size: 0.7rem;
