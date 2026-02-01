@@ -4,7 +4,10 @@ import './Board.css';
 
 export default function Board({ gameData, myId, roomCode }) {
     const { players, board, currentTurn, logs } = gameData;
-    const isMyTurn = players[currentTurn]?.id === myId;
+
+    // currentTurn is a player ID, not an index
+    const currentPlayer = players.find(p => p.id === currentTurn);
+    const isMyTurn = currentTurn === myId;
     const me = players.find(p => p.id === myId);
 
     const [hasRolled, setHasRolled] = useState(false);
@@ -141,7 +144,7 @@ export default function Board({ gameData, myId, roomCode }) {
 
                     <div className="game-controls">
                         <div className="turn-display">
-                            {players[currentTurn]?.name}'s Turn
+                            {currentPlayer?.name}'s Turn
                         </div>
 
                         {isMyTurn && (
@@ -174,7 +177,7 @@ export default function Board({ gameData, myId, roomCode }) {
             <div className="sidebar">
                 <h2>🎮 Players</h2>
                 {players.map((p, i) => (
-                    <div key={p.id} className={`player-card ${i === currentTurn ? 'current' : ''}`}>
+                    <div key={p.id} className={`player-card ${p.id === currentTurn ? 'current' : ''}`}>
                         <img src={`/assets/pokemon/${p.pokemonId || 'mewtwo'}.png`} alt="" />
                         <div>
                             <div className="name">{p.name} {p.id === myId && '(You)'}</div>
