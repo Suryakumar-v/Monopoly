@@ -30,6 +30,9 @@ io.on('connection', (socket) => {
             const roomCode = gameManager.createRoom(playerName, socket.id, pokemonId);
             socket.join(roomCode);
             socket.emit('room_created', { roomCode });
+            // Broadcast state AFTER socket has joined the room
+            const game = gameManager.getGame(roomCode);
+            if (game) game.broadcastState();
         } catch (e) {
             socket.emit('error', e.message);
         }
@@ -40,6 +43,8 @@ io.on('connection', (socket) => {
             const game = gameManager.joinRoom(roomCode, playerName, socket.id, pokemonId);
             socket.join(roomCode);
             socket.emit('joined_room', { roomCode });
+            // Broadcast state AFTER socket has joined the room
+            if (game) game.broadcastState();
         } catch (e) {
             socket.emit('error', e.message);
         }
