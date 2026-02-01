@@ -34,6 +34,7 @@ export default function Board({ gameData, myId, roomCode }) {
     };
     const handleBuy = () => socket.emit('buy_property', { roomCode });
     const handlePayJailFine = () => socket.emit('pay_jail_fine', { roomCode });
+    const handleUseJailCard = () => socket.emit('use_jail_card', { roomCode });
 
     // Grid position
     const getGridPosition = (index) => {
@@ -165,6 +166,9 @@ export default function Board({ gameData, myId, roomCode }) {
                                     <>
                                         <button className="game-btn roll" onClick={handleRoll}>🎲 Roll for Doubles</button>
                                         <button className="game-btn buy" onClick={handlePayJailFine}>💰 Pay ₹50 Fine</button>
+                                        {me.getOutOfJailCards > 0 && (
+                                            <button className="game-btn end" onClick={handleUseJailCard}>🎫 Use Card</button>
+                                        )}
                                     </>
                                 )}
 

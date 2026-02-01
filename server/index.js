@@ -79,6 +79,11 @@ io.on('connection', (socket) => {
         if (game) game.payJailFine(socket.id);
     });
 
+    socket.on('use_jail_card', ({ roomCode }) => {
+        const game = gameManager.getGame(roomCode);
+        if (game) game.useJailCard(socket.id);
+    });
+
     socket.on('end_turn', ({ roomCode }) => {
         try {
             const game = gameManager.getGame(roomCode);
